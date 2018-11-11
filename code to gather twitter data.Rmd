@@ -27,16 +27,16 @@ setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
 
 ```{r }
 
-politicians_df<-read_xlsx("SENATOR.xlsx")
+politicians_df<-read_xlsx("politicians.xlsx")
 handles<-politicians_df$Twitter
 
 get_tweets<- function(user) {
-  user_data<-userTimeline(user, n=100)
+  user_data<-userTimeline(user, n=1, includeRts=FALSE)
   result_df<- twListToDF(user_data) %>% select(text, created,screenName)
   return(result_df)
 }
 
-all_data<-rbind(lapply(handles[1:10], FUN=get_tweets))
+all_data<-rbind(lapply(handles, FUN=get_tweets))
 resutls<-do.call("rbind", all_data)
 
 ```
@@ -45,6 +45,6 @@ resutls<-do.call("rbind", all_data)
 ```{r}
 #split_data <- strsplit(user_data$text, split=" ")
 freq <- termFreq(user_data$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE))
-#dataframe <- plyr::ldply(split_data, rbind)
+
 ```
 
