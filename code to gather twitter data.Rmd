@@ -19,7 +19,7 @@ consumer_key <- ""
 consumer_secret<- ""
 access_token <- ""
 access_secret <- ""
-#github got mad at me for posting these when I pushed this file. I have the actual numbers on my computer
+#github got mad at me for posting these when I pushed this file. I have the actual numbers on my computer.
 
 setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
 ```
