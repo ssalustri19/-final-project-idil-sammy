@@ -5,13 +5,15 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(twitteR)
+library(tm)
+library(readxl)
+library(dplyr)
 ```
 
 ##Get Access to twitter Data, Sammy's credentials
 
 ```{r}
-library(twitteR)
-library(tm)
 
 consumer_key <- "1qXzM9r586rhvDqWV0UjqViLj"
 consumer_secret<- "KYwo8jYsGdYZaWDobEas8yoWtVAmBBm9SSMcHZ4UDTfcm5g3UM"
@@ -24,8 +26,6 @@ setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
 ## Create dataset containing all tweets of all politicians
 
 ```{r }
-library(readxl)
-library(dplyr)
 
 politicians_df<-read_xlsx("SENATOR.xlsx")
 handles<-politicians_df$Twitter
