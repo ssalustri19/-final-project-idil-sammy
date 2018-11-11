@@ -1,0 +1,50 @@
+---
+title: "getting the twitter data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Get Access to twitter Data, Sammy's credentials
+
+```{r}
+library(twitteR)
+library(tm)
+
+consumer_key <- "1qXzM9r586rhvDqWV0UjqViLj"
+consumer_secret<- "KYwo8jYsGdYZaWDobEas8yoWtVAmBBm9SSMcHZ4UDTfcm5g3UM"
+access_token <- "1052645394117742593-4jQrTGtdy1dPS2BH5hYY4TIRQMgndk"
+access_secret <- "qQOo5WKp0SQQ3Fk6L93ICFAjMstSOOyf0EFDFUPJruJvA"
+
+setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
+```
+
+## Create dataset containing all tweets of all politicians
+
+```{r }
+library(readxl)
+library(dplyr)
+
+politicians_df<-read_xlsx("SENATOR.xlsx")
+handles<-politicians_df$Twitter
+
+get_tweets<- function(user) {
+  user_data<-userTimeline(user, n=100)
+  result_df<- twListToDF(user_data) %>% select(text, created,screenName)
+  return(result_df)
+}
+
+all_data<-rbind(lapply(handles[1:10], FUN=get_tweets))
+resutls<-do.call("rbind", all_data)
+
+```
+
+
+```{r}
+#split_data <- strsplit(user_data$text, split=" ")
+freq <- termFreq(user_data$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE))
+#dataframe <- plyr::ldply(split_data, rbind)
+```
+
