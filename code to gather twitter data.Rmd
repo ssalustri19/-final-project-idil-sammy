@@ -57,15 +57,15 @@ freq <- termFreq(results$text, control = list(removePunctuation = TRUE, tolower 
 ##Get csv files for running personality test on freq words
 ```{r}
 library(RCurl)
-myfile <- getURL('http://www.wwbp.org/data.html/C.top100.1to3grams.gender_age_controlled.rmatrix.csv ', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
+myfile <- getURL('http://wwbp.org/downloads/public_data/C.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
 library_conscientiousness <- read.csv(textConnection(myfile), header=T)
-myfile <- getURL('http://www.wwbp.org/data.html/C.top100.1to3grams.gender_age_controlled.rmatrix.csv ', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
+myfile <- getURL('http://wwbp.org/downloads/public_data/O.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
 library_openness <- read.csv(textConnection(myfile), header=T)
-myfile <- getURL('http://www.wwbp.org/data.html/A.top100.1to3grams.gender_age_controlled.rmatrix.csv ', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
+myfile <- getURL('http://wwbp.org/downloads/public_data/A.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
 library_agreeableness <- read.csv(textConnection(myfile), header=T)
-myfile <- getURL('http://www.wwbp.org/data.html/E.top100.1to3grams.gender_age_controlled.rmatrix.csv ', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
+myfile <- getURL('http://wwbp.org/downloads/public_data/E.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
 library_extraversion <- read.csv(textConnection(myfile), header=T)
-myfile <- getURL('http://www.wwbp.org/data.html/N.top100.1to3grams.gender_age_controlled.rmatrix.csv ', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
+myfile <- getURL('http://wwbp.org/downloads/public_data/N.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
 library_neuroticism <- read.csv(textConnection(myfile), header=T)
 
 
