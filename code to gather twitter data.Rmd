@@ -18,10 +18,11 @@ library(dplyr)
 
 ```{r}
 
-consumer_key <- "1qXzM9r586rhvDqWV0UjqViLj"
-consumer_secret<- "KYwo8jYsGdYZaWDobEas8yoWtVAmBBm9SSMcHZ4UDTfcm5g3UM"
-access_token <- "1052645394117742593-4jQrTGtdy1dPS2BH5hYY4TIRQMgndk"
-access_secret <- "qQOo5WKp0SQQ3Fk6L93ICFAjMstSOOyf0EFDFUPJruJvA"
+consumer_key <- ""
+consumer_secret<- ""
+access_token <- ""
+access_secret <- ""
+#github got mad at me for posting these when I pushed this file. I have the actual numbers on my computer.
 
 setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
 ```
