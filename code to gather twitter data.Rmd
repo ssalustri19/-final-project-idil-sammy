@@ -12,6 +12,7 @@ library(twitteR)
 library(tm)
 library(readxl)
 library(dplyr)
+library(readr)
 ```
 
 ##Get Access to twitter Data: We created credentials for "Politicians Language Analysis." App ID is 15958126.  
@@ -56,18 +57,15 @@ freq <- termFreq(results$text, control = list(removePunctuation = TRUE, tolower 
 
 ##Get csv files for running personality test on freq words
 ```{r}
-library(RCurl)
-myfile <- getURL('http://wwbp.org/downloads/public_data/C.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
-library_conscientiousness <- read.csv(textConnection(myfile), header=T)
-myfile <- getURL('http://wwbp.org/downloads/public_data/O.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
-library_openness <- read.csv(textConnection(myfile), header=T)
-myfile <- getURL('http://wwbp.org/downloads/public_data/A.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
-library_agreeableness <- read.csv(textConnection(myfile), header=T)
-myfile <- getURL('http://wwbp.org/downloads/public_data/E.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
-library_extraversion <- read.csv(textConnection(myfile), header=T)
-myfile <- getURL('http://wwbp.org/downloads/public_data/N.top100.1to3grams.gender_age_controlled.rmatrix.csv', ssl.verifyhost=FALSE, ssl.verifypeer=FALSE)
-library_neuroticism <- read.csv(textConnection(myfile), header=T)
+#make library five personality, with one column referring to trait 
 
+library_conscientiousness <- read_csv('http://wwbp.org/downloads/public_data/C.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "conscientiousness") %>% select(-con)
+library_openness <- read_csv('http://wwbp.org/downloads/public_data/O.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "openness") %>% select(-ope)
+library_agreeableness <- read_csv('http://wwbp.org/downloads/public_data/A.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "agreeableness") %>% select(-agr)
+library_extraversion <- read_csv('http://wwbp.org/downloads/public_data/E.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "extraversion") %>% select(-ext)
+library_neuroticism  <- read_csv('http://wwbp.org/downloads/public_data/N.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "neuroticism") %>% select(-neu)
+
+library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness,library_extraversion, library_neuroticism, library_agreeableness)
 
 
 ```
