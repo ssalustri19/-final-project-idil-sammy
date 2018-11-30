@@ -80,3 +80,18 @@ library(SentimentAnalysis)
 library(tidytext)
 str(sentiments)
 
+#examples -- proof of concept
+#sentiment <- analyzeSentiment("I really hate doing screeening on zebrafish.")
+#sentiment$SentimentQDAP
+#[1] -0.25
+#sentiment <- analyzeSentiment("Knowing I go back home in 2 weeks makes studying easier")
+# sentiment$SentimentQDAP
+#[1] 0.1428571
+# sentiment <- analyzeSentiment("I cannot believe I won that lottery. Dreams do come true!")
+# sentiment$SentimentQDAP
+#[1] 0.5
+#analyzeSentiment() does wordcount, uncertainity also
+#there are multiple dictionaries inside, this is QDAP scores. 
+```
+
+##This has subjectivity : https://www.r-bloggers.com/slightly-more-than-basic-sentiment-analysis/
