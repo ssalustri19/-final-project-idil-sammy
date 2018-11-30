@@ -69,3 +69,14 @@ library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness
 
 
 ```
+
+
+##Get sentiment libraries in R for word/sentence sentiment : positive/negative ex.
+```{r}
+install.packages("devtools")
+library("devtools")
+install_github("cran/SentimentAnalysis")
+library(SentimentAnalysis)
+library(tidytext)
+str(sentiments)
+
