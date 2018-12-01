@@ -13,16 +13,22 @@ library(tm)
 library(readxl)
 library(dplyr)
 library(readr)
+#install.packages("devtools")
+library("devtools")
+#install_github("cran/SentimentAnalysis")
+library(SentimentAnalysis)
+library(tidytext)
+library (reshape2)
 ```
 
 ##Get Access to twitter Data: We created credentials for "Politicians Language Analysis." App ID is 15958126.  
 
 ```{r}
 
-consumer_key <- ""
-consumer_secret<- ""
-access_token <- ""
-access_secret <- ""
+#consumer_key <- ""
+#consumer_secret<- ""
+#access_token <- ""
+#access_secret <- ""
 #github got mad at me for posting these when I pushed this file. I have the actual numbers on my computer.
 
 setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
@@ -36,7 +42,7 @@ politicians_df<-read_xlsx("politicians.xlsx")
 handles<-politicians_df$Twitter
 
 get_tweets<- function(user) {
-  user_data<-userTimeline(user, n=1, includeRts=FALSE)
+  user_data<-userTimeline(user, n=5, includeRts=FALSE)
   result_df<- twListToDF(user_data) %>% select(text, created,screenName)
   return(result_df)
 }
@@ -50,13 +56,17 @@ results<-do.call("rbind", all_data)
 
 ```{r}
 #split_data <- strsplit(user_data$text, split=" ")
-freq <- termFreq(results$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE))
+user_text <- results %>% filter(screenName == user) %>% select(text)
+freq <- termFreq(user_text$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE)) 
+freq <- as.data.frame(melt(as.matrix(freq), varnames = c("word", "some"))) %>% select(-some)
+freq$word <- as.character(freq$word)
+freq <- freq %>% arrange(desc(value)) %>% head(n=10)
 
 ```
 
 
 ##Get csv files for running personality test on freq words
-```{r}
+```{r warning=FALSE, message=FALSE}
 #make library five personality, with one column referring to trait 
 
 library_conscientiousness <- read_csv('http://wwbp.org/downloads/public_data/C.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "conscientiousness") %>% select(-con)
@@ -65,21 +75,33 @@ library_agreeableness <- read_csv('http://wwbp.org/downloads/public_data/A.top10
 library_extraversion <- read_csv('http://wwbp.org/downloads/public_data/E.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "extraversion") %>% select(-ext)
 library_neuroticism  <- read_csv('http://wwbp.org/downloads/public_data/N.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "neuroticism") %>% select(-neu)
 
-library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness,library_extraversion, library_neuroticism, library_agreeableness)
+library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness,library_extraversion, library_neuroticism, library_openness)
 
-
+find_personality <- function (word){
+  word_found<- library_fivepersonality %>% filter(X1 == word) %>% arrange(p) %>% head(n=1)
+  return(c(word_found$trait, word_found$X1))
+}
+fivepersonality_data <- sapply(freq$word, FUN = find_personality)
+fivepersonality_data <- data.frame(t(fivepersonality_data))
+#not all words are in this dictionary
 ```
 
 
 ##Get sentiment libraries in R for word/sentence sentiment : positive/negative ex.
 ```{r}
-install.packages("devtools")
-library("devtools")
-install_github("cran/SentimentAnalysis")
-library(SentimentAnalysis)
-library(tidytext)
-str(sentiments)
 
+#str(sentiments)
+
+find_sentiments <- function (our_word){
+  word_found<- sentiments %>% filter( word == our_word)
+  return(word_found)
+}
+sentiment_data <- sapply(freq$word, FUN = find_sentiments)
+sentiment_data <- data.frame(t(sentiment_data))
+
+
+analyzeSentiment(user_text$text[1])$Sent
+convertToDirection(sentiment)
 #examples -- proof of concept
 #sentiment <- analyzeSentiment("I really hate doing screeening on zebrafish.")
 #sentiment$SentimentQDAP
