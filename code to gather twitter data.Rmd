@@ -19,6 +19,14 @@ library("devtools")
 library(SentimentAnalysis)
 library(tidytext)
 library (reshape2)
+install_github("trinker/lexicon") 
+library(lexicon) 
+
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
+
+
 ```
 
 ##Get Access to twitter Data: We created credentials for "Politicians Language Analysis." App ID is 15958126.  
@@ -41,6 +49,7 @@ setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
 politicians_df<-read_xlsx("politicians.xlsx")
 handles<-politicians_df$Twitter
 
+
 get_tweets<- function(user) {
   user_data<-userTimeline(user, n=5, includeRts=FALSE)
   result_df<- twListToDF(user_data) %>% select(text, created,screenName)
@@ -55,12 +64,30 @@ results<-do.call("rbind", all_data)
 ## Return the frequency of the words that are parsed from each tweet, returned as a list. We clean the data from any punctuation, turn words to lower case and exclude stopwords. 
 
 ```{r}
-#split_data <- strsplit(user_data$text, split=" ")
+
+#example user
+user<- "ChrisCoons"
+
 user_text <- results %>% filter(screenName == user) %>% select(text)
+
 freq <- termFreq(user_text$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE)) 
+
 freq <- as.data.frame(melt(as.matrix(freq), varnames = c("word", "some"))) %>% select(-some)
+
 freq$word <- as.character(freq$word)
+
 freq <- freq %>% arrange(desc(value)) %>% head(n=10)
+
+```
+
+#word frequency clouds
+```{r}
+#use tm packange
+
+set.seed(1234)
+wordcloud(words = freq$word, freq = freq$value, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
 
 ```
 
@@ -79,7 +106,8 @@ library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness
 
 find_personality <- function (word){
   word_found<- library_fivepersonality %>% filter(X1 == word) %>% arrange(p) %>% head(n=1)
-  return(c(word_found$trait, word_found$X1))
+   if (!is.na(word_found))
+  {return(c(word_found$trait, word_found$X1))}
 }
 fivepersonality_data <- sapply(freq$word, FUN = find_personality)
 fivepersonality_data <- data.frame(t(fivepersonality_data))
@@ -94,14 +122,16 @@ fivepersonality_data <- data.frame(t(fivepersonality_data))
 
 find_sentiments <- function (our_word){
   word_found<- sentiments %>% filter( word == our_word)
-  return(word_found)
+   if (!is.na(word_found))
+  {return(word_found)}
 }
 sentiment_data <- sapply(freq$word, FUN = find_sentiments)
 sentiment_data <- data.frame(t(sentiment_data))
 
 
-analyzeSentiment(user_text$text[1])$Sent
+sentiment<-analyzeSentiment(user_text$text[1])
 convertToDirection(sentiment)
+
 #examples -- proof of concept
 #sentiment <- analyzeSentiment("I really hate doing screeening on zebrafish.")
 #sentiment$SentimentQDAP
@@ -117,3 +147,19 @@ convertToDirection(sentiment)
 ```
 
 ##This has subjectivity : https://www.r-bloggers.com/slightly-more-than-basic-sentiment-analysis/
+
+```{r}
+
+key_regressive_imagery_our <- key_regressive_imagery %>% mutate(regex = gsub("[^0-9A-Za-z///' ]","'" , regex ,ignore.case = TRUE)) %>% mutate(regex = sub("\\'b$", "", regex)) %>% mutate(regex = sub("\\'", "", regex)) %>% mutate(regex = sub("^b", "", regex))
+
+find_imagery <- function (our_word){
+  word_found<- key_regressive_imagery_our %>% filter( regex == our_word)
+  #if (!is.na(word_found))
+  return(word_found)
+}
+imagery_data <- sapply(freq$word, FUN = find_imagery)
+imagery_data <- data.frame(t(imagery_data))
+
+
+```
+
