@@ -6,6 +6,9 @@ library(dplyr)
 library(lubridate)
 library(tidytext)
 library(tm)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
 
 politicians<-read_csv('https://raw.githubusercontent.com/ssalustri19/final-project-idil-sammy/master/politicians.csv')
 
@@ -54,17 +57,24 @@ server<- function(input,output){
                                                   mutate(date=lubridate::date(created)) %>% 
                                                   select(text, date)
                                                   })
-  
-  output$freqtable <- DT::renderDataTable({
+  freq<-reactive({
     raw<-tm::termFreq(tweets_from_selected_politician()$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE)) 
     df <- as.data.frame(melt(as.matrix(raw), varnames = c("word", "some"))) %>% select(-some)
     df$word <- as.character(df$word)
     df2<- df %>% arrange(desc(value)) 
-    DT::datatable(data = df2, 
+  })
+  
+  output$freqtable <- DT::renderDataTable({
+    DT::datatable(data = freq(), 
                 options = list(pageLength = 10), 
                 rownames = FALSE)
   })
     
+  output$cloud<-renderPlot({
+    set.seed(1234)
+    wordcloud::wordcloud(freq()$word, freq()$value, min.freq=5, max.words=200, random.order=FALSE, rot.per=0.35, 
+              colors=RColorBrewer::brewer.pal(8, "Dark2"))
+  })
 
 
   
