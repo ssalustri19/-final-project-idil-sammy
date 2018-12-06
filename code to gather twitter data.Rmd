@@ -47,7 +47,7 @@ setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
 ```{r }
 
 politicians_df<-read_xlsx("politicians.xlsx")
-handles<-politicians_df$Twitter
+handles<-politicians_df$twitter_handle
 
 
 get_tweets<- function(user) {
@@ -76,8 +76,12 @@ freq <- as.data.frame(melt(as.matrix(freq), varnames = c("word", "some"))) %>% s
 
 freq$word <- as.character(freq$word)
 
+freq_for_trait <- freq
 freq <- freq %>% arrange(desc(value)) %>% head(n=10)
 
+#x <- do.call("c", (mapply(rep, freq_for_trait$word, freq_for_trait$value))) 
+#x <- as.data.frame(x)
+#freq_for_trait <- x$x %>% as.character() %>% as.data.frame(freq_for_trait)
 ```
 
 #word frequency clouds
@@ -104,12 +108,14 @@ library_neuroticism  <- read_csv('http://wwbp.org/downloads/public_data/N.top100
 
 library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness,library_extraversion, library_neuroticism, library_openness)
 
+inner_join(library_fivepersonality, freq_for_trait, by = c("X1" = "word"))
+
 find_personality <- function (word){
   word_found<- library_fivepersonality %>% filter(X1 == word) %>% arrange(p) %>% head(n=1)
-   if (!is.na(word_found))
-  {return(c(word_found$trait, word_found$X1))}
+  
+  return(c(word_found$trait, word_found$X1))
 }
-fivepersonality_data <- sapply(freq$word, FUN = find_personality)
+fivepersonality_data <- sapply(freq_for_trait$word, FUN = find_personality)
 fivepersonality_data <- data.frame(t(fivepersonality_data))
 #not all words are in this dictionary
 ```
