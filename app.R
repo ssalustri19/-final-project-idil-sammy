@@ -9,11 +9,22 @@ library(tm)
 library(SnowballC)
 library(wordcloud)
 library(RColorBrewer)
+library(ggplot2)
 library(reshape2)
 
 politicians<-read_csv('https://raw.githubusercontent.com/ssalustri19/final-project-idil-sammy/master/politicians.csv')
 
 setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
+
+library_conscientiousness <- read_csv('http://wwbp.org/downloads/public_data/C.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "conscientiousness") %>% select(-con)
+library_openness <- read_csv('http://wwbp.org/downloads/public_data/O.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "openness") %>% select(-ope)
+library_agreeableness <- read_csv('http://wwbp.org/downloads/public_data/A.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "agreeableness") %>% select(-agr)
+library_extraversion <- read_csv('http://wwbp.org/downloads/public_data/E.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "extraversion") %>% select(-ext)
+library_neuroticism  <- read_csv('http://wwbp.org/downloads/public_data/N.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "neuroticism") %>% select(-neu)
+
+#join the 5 data sets above. All about personality types
+library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness,library_extraversion, library_neuroticism, library_openness)
+library_fivepersonality <-library_fivepersonality %>%  rename(word = X1)
 
 ui<- fluidPage(
   titlePanel("Analyzing Politicans' Word Usage in Tweets"),
@@ -36,7 +47,9 @@ ui<- fluidPage(
     mainPanel(
       tabsetPanel(tabPanel("Raw Tweets Data Frame", DT::dataTableOutput(outputId = "tweetstable")),
                   tabPanel("Word Frequency Table", DT::dataTableOutput(outputId = "freqtable")),
-                  tabPanel("Word Cloud", plotOutput(outputId="cloud"))
+                  tabPanel("Word Cloud", plotOutput(outputId="cloud")),
+                  tabPanel("Personality Analysis Plot", plotOutput(outputId = "personality_plot")),
+                  tabPanel("Positivity and Negativity", plotOutput(outputId = "positivity_plot"))
       )
               
     )
@@ -83,6 +96,12 @@ server<- function(input,output){
     DT::datatable(data = tweets_from_selected_politician(), 
                   options = list(pageLength = 10), 
                   rownames = FALSE)
+  })
+  output$personality_plot<-renderPlot({
+    inner_join(library_fivepersonality, freq(), by=c("word"="word")) %>% group_by(trait) %>% summarize(word_count=sum(value)) %>% ggplot(aes(x=trait, y=word_count))+geom_bar(stat="identity")
+  })
+  output$positivity_plot<-renderPlot({
+    tweets_from_selected_politician() %>% mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>% ggplot(aes(x=positivity_rating))+geom_histogram()
   })
 }
   
