@@ -87,9 +87,8 @@ server<- function(input,output){
     name<-df$name
     party<-df$party
     position<-df$position
-    
+  
     if (party=="D") party<-"democratic" else if (party=="R") party<-"republican" else party<-"independent"
-    
     paste(name, " is a ", party, position, ".")
     
   })
