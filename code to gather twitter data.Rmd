@@ -26,7 +26,11 @@ library(DescTools)
 library(SnowballC)
 library(wordcloud)
 library(RColorBrewer)
-
+library(jmuOutlier)
+install_github("cran/jmuOutlier")
+install_github("cran/wordnet")
+library(wordnet)
+✔
 
 ```
 
@@ -76,9 +80,14 @@ freq <- termFreq(user_text$text, control = list(removePunctuation = TRUE, tolowe
 freq <- as.data.frame(melt(as.matrix(freq), varnames = c("word", "some"))) %>% select(-some)
 
 freq$word <- as.character(freq$word)
-freq$word <- stemDocument(freq$word)
 
 freq <- freq %>% filter(!word %like% "http%")
+freq$word <- stemDocument(freq$word)
+find_full_form <- function(x){
+freq$word[x] <<- abbreviation(freq$word[x], sentiments$word)
+}
+sapply(1:length(freq$word), FUN = find_full_form)
+
 
 freq_for_trait <- freq
 freq <- freq %>% arrange(desc(value)) %>% head(n=10)
@@ -113,7 +122,7 @@ library_neuroticism  <- read_csv('http://wwbp.org/downloads/public_data/N.top100
 
 library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness,library_extraversion, library_neuroticism, library_openness)
 
-fivepersonality_data <- inner_join(library_fivepersonality, freq_for_trait, by = c("X1" in "word"))
+fivepersonality_data <- inner_join(library_fivepersonality, freq_for_trait, by = c("X1" = "word"))
 
 find_personality <- function (word){
   word_found<- library_fivepersonality %>% filter(X1 == word) %>% arrange(p) %>% head(n=1)
