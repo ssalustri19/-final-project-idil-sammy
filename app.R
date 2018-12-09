@@ -11,6 +11,7 @@ library(wordcloud)
 library(RColorBrewer)
 library(ggplot2)
 library(reshape2)
+library(SentimentAnalysis)
 
 politicians<-read_csv('https://raw.githubusercontent.com/ssalustri19/final-project-idil-sammy/master/politicians.csv')
 
@@ -98,10 +99,13 @@ server<- function(input,output){
                   rownames = FALSE)
   })
   output$personality_plot<-renderPlot({
-    inner_join(library_fivepersonality, freq(), by=c("word"="word")) %>% group_by(trait) %>% summarize(word_count=sum(value)) %>% ggplot(aes(x=trait, y=word_count))+geom_bar(stat="identity")
+    inner_join(library_fivepersonality, freq(), by=c("word"="word")) %>% group_by(trait) %>% summarize(word_count=sum(value)) %>% ggplot(aes(x=trait, y=word_count))+geom_bar(stat="identity")+xlab("Personality trait associated with each word")+ylab("Number of Words")+ggtitle("Personality Analysis Plot")
   })
   output$positivity_plot<-renderPlot({
-    tweets_from_selected_politician() %>% mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>% ggplot(aes(x=positivity_rating, fill = as.factor(sign(positivity_rating))))+geom_histogram() + labs(fill="polarity")
+    tweets_from_selected_politician() %>% mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>% ggplot(aes(x=positivity_rating, fill = as.factor(sign(positivity_rating))))+geom_histogram(binwidth = .1) + scale_fill_manual(values=c("darkred", "gray", "darkgreen"), 
+                                                                                                                                                                                                                                           name="Positive or Negative?",
+                                                                                                                                                                                                                                           breaks=c("-1", "0", "1"),
+                                                                                                                                                                                                                                           labels=c("More negative", "Neutral", "More Positive"))+xlab("Net Positivity Rating Per Tweet")+ylab("Number of Tweets")+ggtitle("Positivity of Tweets Distrinbution ")
   })
 }
   
