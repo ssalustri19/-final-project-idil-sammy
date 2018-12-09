@@ -12,6 +12,9 @@ library(RColorBrewer)
 library(ggplot2)
 library(reshape2)
 library(SentimentAnalysis)
+library(lexicon)
+library(DescTools)
+
 
 politicians<-read_csv('https://raw.githubusercontent.com/ssalustri19/final-project-idil-sammy/master/politicians.csv')
 
@@ -27,6 +30,10 @@ library_neuroticism  <- read_csv('http://wwbp.org/downloads/public_data/N.top100
 library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness,library_extraversion, library_neuroticism, library_openness)
 library_fivepersonality <-library_fivepersonality %>%  rename(word = X1)
 
+#the thinking type/psychoanalysis library; make it usable
+ primordial_thinking_library<- lexicon::key_regressive_imagery %>% rename(word = regex, type_of_thinking = thinking) %>% mutate(word = gsub("[^0-9A-Za-z///' ]","'" , word ,ignore.case = TRUE)) %>% mutate(word = sub("\\'b$", "", word)) %>% mutate(word = sub("\\'", "", word)) %>% mutate(word = sub("^b", "", word)) %>% select(word, type_of_thinking, category)
+
+   
 ui<- fluidPage(
   titlePanel("Analyzing Politicans' Word Usage in Tweets"),
   sidebarLayout(
@@ -49,8 +56,9 @@ ui<- fluidPage(
       tabsetPanel(tabPanel("Raw Tweets Data Frame", DT::dataTableOutput(outputId = "tweetstable")),
                   tabPanel("Word Frequency Table", DT::dataTableOutput(outputId = "freqtable")),
                   tabPanel("Word Cloud", plotOutput(outputId="cloud")),
-                  tabPanel("Personality Analysis Plot", plotOutput(outputId = "personality_plot")),
-                  tabPanel("Positivity and Negativity", plotOutput(outputId = "positivity_plot"))
+                  tabPanel("Personality Analysis", plotOutput(outputId = "personality_plot")),
+                  tabPanel("Positivity and Negativity Analysis", plotOutput(outputId = "positivity_plot")),
+                  tabPanel("Primordial Thinking Analysis", plotOutput(outputId = "primordial_plot"),DT::dataTableOutput(outputId = "test"))
       )
               
     )
@@ -76,7 +84,7 @@ server<- function(input,output){
     raw<-tm::termFreq(tweets_from_selected_politician()$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE)) 
     df <- as.data.frame(melt(as.matrix(raw), varnames = c("word", "some"))) %>% select(-some)
     df$word <- as.character(df$word)
-    df2<- df %>% arrange(desc(value)) 
+    df <- df %>% filter(!word %like% "http%") %>% arrange(desc(value)) 
   })
   
   output$freqtable <- DT::renderDataTable({
@@ -102,10 +110,15 @@ server<- function(input,output){
     inner_join(library_fivepersonality, freq(), by=c("word"="word")) %>% group_by(trait) %>% summarize(word_count=sum(value)) %>% ggplot(aes(x=trait, y=word_count))+geom_bar(stat="identity")+xlab("Personality trait associated with each word")+ylab("Number of Words")+ggtitle("Personality Analysis Plot")
   })
   output$positivity_plot<-renderPlot({
-    tweets_from_selected_politician() %>% mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>% ggplot(aes(x=positivity_rating, fill = as.factor(sign(positivity_rating))))+geom_histogram(binwidth = .1) + scale_fill_manual(values=c("darkred", "gray", "darkgreen"), 
-                                                                                                                                                                                                                                           name="Positive or Negative?",
-                                                                                                                                                                                                                                           breaks=c("-1", "0", "1"),
-                                                                                                                                                                                                                                           labels=c("More negative", "Neutral", "More Positive"))+xlab("Net Positivity Rating Per Tweet")+ylab("Number of Tweets")+ggtitle("Positivity of Tweets Distrinbution ")
+    tweets_from_selected_politician() %>% mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>% ggplot(aes(x=positivity_rating, fill = as.factor(sign(positivity_rating))))+geom_histogram(binwidth = .1) + scale_fill_manual(values=c("darkred", "gray", "darkgreen"), name="Positive or Negative?",breaks=c("-1", "0", "1"), labels=c("More Negative","Neutral","More Positive"))+xlab("Net Positivity Rating Per Tweet")+ylab("Number of Tweets")+ggtitle("Positivity of Tweets Distrinbution")
+  })
+    
+  output$primordial_plot<-renderPlot({
+    inner_join(primordial_thinking_library, freq(), by = c("word" = "word")) %>% group_by(type_of_thinking) %>% ggplot(aes(x=type_of_thinking, y=value, fill = category))+geom_col()
+  
+  })
+  output$test<-DT::renderDataTable({
+    inner_join(primordial_thinking_library, freq(), by = c("word" = "word")) %>% group_by(type_of_thinking) %>% rename(word_frequency = value)
   })
 }
   
