@@ -99,12 +99,12 @@ SenToomey,Pat,Toomey,Pat Toomey,senator,R
 SenWarren,Elizabeth,Warren,Elizabeth Warren,senator,D
 SenWhitehouse,Sheldon,Whitehouse,Sheldon Whitehouse,senator,D
 SteveDaines,Steve,Daines,Steve Daines,senator,R
-realDonaldTrump,Trump,Donald J. ,Trump Donald J. ,president,R
-BarackObama,Obama,Barack,Obama Barack,president,D
-GeorgeHWBush,Bush,George ,Bush George ,president,R
-HillaryClinton,Clinton,Hillary,Clinton Hillary,secretary of state,D
-BillClinton,Clinton,Bill ,Clinton Bill ,president ,D
-JoeBiden,Biden,Joe,Biden Joe,vice president,D
-SpeakerRyan,Ryan,Paul,Ryan Paul,representative,R
-NancyPelosi,Pelosi,Nancy,Pelosi Nancy,representative,D
-mike_pence,Pence,Mike,Pence Mike,vice president,R
+realDonaldTrump,Donald,Trump,Donald Trump,president,R
+BarackObama,Barack,Obama,Barack Obama,president,D
+GeorgeHWBush,George,Bush,George Bush,president,R
+HillaryClinton,Hillary ,Clinton,Hillary  Clinton,secretary of state,D
+BillClinton,Bill,Clinton,Bill Clinton,president ,D
+JoeBiden,Joe,Biden,Joe Biden,vice president,D
+SpeakerRyan,Paul,Ryan,Paul Ryan,representative,R
+NancyPelosi,Nancy,Pelosi,Nancy Pelosi,representative,D
+mike_pence,Mike,Pence,Mike Pence,vice president,R
