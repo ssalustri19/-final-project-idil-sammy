@@ -14,7 +14,7 @@ library(reshape2)
 library(SentimentAnalysis)
 library(lexicon)
 library(DescTools)
-
+library(jmuOutlier)
 
 politicians<-read_csv('https://raw.githubusercontent.com/ssalustri19/final-project-idil-sammy/master/politicians.csv')
 
@@ -53,12 +53,20 @@ ui<- fluidPage(
   
     ),
     mainPanel(
-      tabsetPanel(tabPanel("Raw Tweets Data Frame", DT::dataTableOutput(outputId = "tweetstable")),
+      tabsetPanel(tabPanel("Raw Tweets Data Frame", textOutput(outputId = "position_party"), DT::dataTableOutput(outputId = "tweetstable")),
                   tabPanel("Word Frequency Table", DT::dataTableOutput(outputId = "freqtable")),
                   tabPanel("Word Cloud", plotOutput(outputId="cloud")),
-                  tabPanel("Personality Analysis", plotOutput(outputId = "personality_plot")),
                   tabPanel("Positivity and Negativity Analysis", plotOutput(outputId = "positivity_plot")),
-                  tabPanel("Primordial Thinking Analysis", plotOutput(outputId = "primordial_plot"),DT::dataTableOutput(outputId = "test"))
+                  tabPanel("Personality Analysis", plotOutput(outputId = "personality_plot"),
+                           h4("This analysis is based on the `World Well-Being Project` by UPENN; http://www.wwbp.org/publications.html"),
+                           h5("Schwartz, H.Andrew, et al. “Personality, Gender, and Age in the Language of Social Media: The Open-Vocabulary Approach.” PLoS ONE, vol. 8, no. 9, Sept. 2013, pp. 1–16")),
+                  tabPanel("Primordial Thinking Analysis", plotOutput(outputId = "primordial_plot"),DT::dataTableOutput(outputId = "test"), 
+                           h4("Our analysis uses the `Key regressive imagery` dictionary from the lexicon package. It is based on the following papers:"), 
+                              h5("Martindale, C. (1975). Romantic progression: The psychology of literary history. Washington, D.C.: Hemisphere."),
+                              h5("Martindale, C. (1976). Primitive mentality and the relationship between art and society. Scientific Aesthetics, 1, 5218."),
+                              h5("Martindale, C. (1977). Syntactic and semantic correlates of verbal tics in Gilles de la Tourette's syndrome: A quantitative case study. Brain and Language, 4, 231-247."),
+                              h5("Martindale, C. (1990). The clockwork muse: The predictability of artistic change. New York: Basic Books."))
+
       )
               
     )
@@ -73,6 +81,18 @@ ui<- fluidPage(
 
 server<- function(input,output){
 
+  output$position_party<-renderText({
+    req(input$politician)
+    df<-politicians %>% filter(twitter_handle==input$politician) %>% select(name,position,party)
+    name<-df$name
+    party<-df$party
+    position<-df$position
+    
+    if (party=="D") party<-"democratic" else if (party=="R") party<-"republican" else party<-"independent"
+    
+    paste(name, " is a ", party, position, ".")
+    
+  })
   
   tweets_from_selected_politician<-eventReactive(input$goButton,
                                                  {userTimeline(input$politician, n = input$numtweets, includeRts = FALSE)%>%
@@ -84,7 +104,7 @@ server<- function(input,output){
     raw<-tm::termFreq(tweets_from_selected_politician()$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE)) 
     df <- as.data.frame(melt(as.matrix(raw), varnames = c("word", "some"))) %>% select(-some)
     df$word <- as.character(df$word)
-    df <- df %>% filter(!word %like% "http%") %>% arrange(desc(value)) 
+    df <- df %>% filter(!word %like% "http%", !word %like% "^amp%") %>% arrange(desc(value)) 
   })
   
   output$freqtable <- DT::renderDataTable({
