@@ -28,9 +28,9 @@ library(wordcloud)
 library(RColorBrewer)
 library(jmuOutlier)
 install_github("cran/jmuOutlier")
-install_github("cran/wordnet")
-library(wordnet)
-✔
+#install_github("cran/wordnet")
+#library(wordnet)
+
 
 ```
 
@@ -172,13 +172,16 @@ convertToDirection(sentiment)
 
 key_regressive_imagery_our <- key_regressive_imagery %>% mutate(regex = gsub("[^0-9A-Za-z///' ]","'" , regex ,ignore.case = TRUE)) %>% mutate(regex = sub("\\'b$", "", regex)) %>% mutate(regex = sub("\\'", "", regex)) %>% mutate(regex = sub("^b", "", regex))
 
-find_imagery <- function (our_word){
+imagery_data <- inner_join(key_regressive_imagery_our, freq_for_trait, by = c("regex" = "word"))
+imagery_data %>% group_by(thinking) %>% summarise(total_value = sum(value)) %>% ggplot(aes(x=thinking, y=total_value, col = category))+geom_bar()
+
+#find_imagery <- function (our_word){
   word_found<- key_regressive_imagery_our %>% filter( regex == our_word)
   #if (!is.na(word_found))
   return(word_found)
 }
-imagery_data <- sapply(freq$word, FUN = find_imagery)
-imagery_data <- data.frame(t(imagery_data))
+#imagery_data <- sapply(freq$word, FUN = find_imagery)
+#imagery_data <- data.frame(t(imagery_data))
 
 
 ```
