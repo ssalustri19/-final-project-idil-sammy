@@ -101,7 +101,7 @@ server<- function(input,output){
     inner_join(library_fivepersonality, freq(), by=c("word"="word")) %>% group_by(trait) %>% summarize(word_count=sum(value)) %>% ggplot(aes(x=trait, y=word_count))+geom_bar(stat="identity")
   })
   output$positivity_plot<-renderPlot({
-    tweets_from_selected_politician() %>% mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>% ggplot(aes(x=positivity_rating))+geom_histogram()
+    tweets_from_selected_politician() %>% mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>% ggplot(aes(x=positivity_rating, fill = as.factor(sign(positivity_rating))))+geom_histogram() + labs(fill="polarity")
   })
 }
   
