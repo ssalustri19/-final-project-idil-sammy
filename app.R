@@ -1,3 +1,6 @@
+# This is a Shiny web application. You can run the application by clicking
+# the 'Run App' button above.
+
 library(shiny)
 library(readr)
 library(DT)
@@ -16,10 +19,17 @@ library(lexicon)
 library(DescTools)
 library(jmuOutlier)
 
+
 politicians<-read_csv('https://raw.githubusercontent.com/ssalustri19/final-project-idil-sammy/master/politicians.csv')
 
-setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
+#fill in your own twitter credentials to gain access to live dataset
+consumer_key <- "___"
+consumer_secret<- "___"
+access_token <- "___"
+access_secret <- "___"
+twitteR::setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
 
+#personality analysis sentiment dictionaries
 library_conscientiousness <- read_csv('http://wwbp.org/downloads/public_data/C.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "conscientiousness") %>% select(-con)
 library_openness <- read_csv('http://wwbp.org/downloads/public_data/O.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "openness") %>% select(-ope)
 library_agreeableness <- read_csv('http://wwbp.org/downloads/public_data/A.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "agreeableness") %>% select(-agr)
@@ -31,9 +41,9 @@ library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness
 library_fivepersonality <-library_fivepersonality %>%  rename(word = X1)
 
 #the thinking type/psychoanalysis library; cleans it up and makes it usable
- primordial_thinking_library<- lexicon::key_regressive_imagery %>% rename(word = regex, type_of_thinking = thinking) %>% mutate(word = gsub("[^0-9A-Za-z///' ]","'" , word ,ignore.case = TRUE)) %>% mutate(word = sub("\\'b$", "", word)) %>% mutate(word = sub("\\'", "", word)) %>% mutate(word = sub("^b", "", word)) %>% select(word, type_of_thinking, category)
+primordial_thinking_library<- lexicon::key_regressive_imagery %>% rename(word = regex, type_of_thinking = thinking) %>% mutate(word = gsub("[^0-9A-Za-z///' ]","'" , word ,ignore.case = TRUE)) %>% mutate(word = sub("\\'b$", "", word)) %>% mutate(word = sub("\\'", "", word)) %>% mutate(word = sub("^b", "", word)) %>% select(word, type_of_thinking, category)
 
-   
+# Define UI for application
 ui<- fluidPage(
   titlePanel("Analyzing Politicans' Tweets"),
   
@@ -73,18 +83,19 @@ ui<- fluidPage(
                            DT::dataTableOutput(outputId = "test"), 
                            br(),
                            h6("Our analysis uses the `Key regressive imagery` dictionary from the lexicon package. It is based on the following papers:"), 
-                              h6("Martindale, C. (1975). Romantic progression: The psychology of literary history. Washington, D.C.: Hemisphere."),
-                              h6("Martindale, C. (1976). Primitive mentality and the relationship between art and society. Scientific Aesthetics, 1, 5218."),
-                              h6("Martindale, C. (1977). Syntactic and semantic correlates of verbal tics in Gilles de la Tourette's syndrome: A quantitative case study. Brain and Language, 4, 231-247."),
-                              h6("Martindale, C. (1990). The clockwork muse: The predictability of artistic change. New York: Basic Books."))
+                           h6("Martindale, C. (1975). Romantic progression: The psychology of literary history. Washington, D.C.: Hemisphere."),
+                           h6("Martindale, C. (1976). Primitive mentality and the relationship between art and society. Scientific Aesthetics, 1, 5218."),
+                           h6("Martindale, C. (1977). Syntactic and semantic correlates of verbal tics in Gilles de la Tourette's syndrome: A quantitative case study. Brain and Language, 4, 231-247."),
+                           h6("Martindale, C. (1990). The clockwork muse: The predictability of artistic change. New York: Basic Books."))
       )
     )
   )
 )
 
-
+# Define server logic
 server<- function(input,output){
-
+  
+  #tells us name, party and position of the selected twitter handle
   output$position_party<-renderText({
     req(input$politician)
     df<-politicians %>% filter(twitter_handle==input$politician) %>% select(name,position,party)
@@ -95,13 +106,14 @@ server<- function(input,output){
     paste(name, " is a ", party, position, ".")
   })
   
+  #creates reactive dataframe of tweets for a single politician, only updates when button is pressed
   tweets_from_selected_politician<-eventReactive(input$goButton,
                                                  {userTimeline(input$politician, n = input$numtweets, includeRts = FALSE)%>%
-                                                  twListToDF() %>% 
-                                                  mutate(date=lubridate::date(created)) %>% 
-                                                  select(text, date)
-                                                  })
-  
+                                                     twListToDF() %>% 
+                                                     mutate(date=lubridate::date(created)) %>% 
+                                                     select(text, date)
+                                                 })
+  #creates a reactive word frequency dataframe of all the words used in the collected tweets
   freq<-reactive({
     raw<-tm::termFreq(tweets_from_selected_politician()$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE)) 
     df <- as.data.frame(melt(as.matrix(raw), varnames = c("word", "some"))) %>% select(-some)
@@ -109,40 +121,49 @@ server<- function(input,output){
     df <- df %>% filter(!word %like% "http%", !word %like% "^amp%") %>% arrange(desc(value)) 
   })
   
+  #creates a word frequency table output
   output$freqtable <- DT::renderDataTable({
     DT::datatable(data = freq(), 
-                options = list(pageLength = 10), 
-                rownames = FALSE)
+                  options = list(pageLength = 10), 
+                  rownames = FALSE)
   })
-    
+  
+  #creates a word cloud
   output$cloud<-renderPlot({
     set.seed(1234)
     wordcloud::wordcloud(freq()$word, freq()$value, min.freq=5, max.words=200, random.order=FALSE, rot.per=0.35, 
-              colors=RColorBrewer::brewer.pal(8, "Dark2"))
+                         colors=RColorBrewer::brewer.pal(8, "Dark2"))
   })
   
+  #creates a table output of the reactive tweets dataframe
   output$tweetstable<-DT::renderDataTable({
     DT::datatable(data = tweets_from_selected_politician(), 
                   options = list(pageLength = 10), 
                   rownames = FALSE)
   })
   
+  #creates plot of personality types associated with each word used
   output$personality_plot<-renderPlot({
     inner_join(library_fivepersonality, freq(), by=c("word"="word")) %>% group_by(trait) %>% summarize(word_count=sum(value)) %>% ggplot(aes(x=trait, y=word_count))+geom_bar(stat="identity")+xlab("Personality trait associated with each word")+ylab("Number of Words")+ggtitle("Personality Analysis Plot")
   })
   
+  #creates a plot of the overall positivity of each tweet
   output$positivity_plot<-renderPlot({
     tweets_from_selected_politician() %>% mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>% ggplot(aes(x=positivity_rating, fill = as.factor(sign(positivity_rating))))+geom_histogram(binwidth = .1) + scale_fill_manual(values=c("darkred", "gray", "darkgreen"), name="Positive or Negative?",breaks=c("-1", "0", "1"), labels=c("More Negative","Neutral","More Positive"))+xlab("Net Positivity Rating Per Tweet")+ylab("Number of Tweets")+ggtitle("Positivity of Tweets Distrinbution")
   })
-    
+  
+  #creates a plot of the level/type of thining associated with each word
   output$primordial_plot<-renderPlot({
     inner_join(primordial_thinking_library, freq(), by = c("word" = "word")) %>% group_by(type_of_thinking) %>% ggplot(aes(x=type_of_thinking, y=value, fill = category))+geom_col()+ggtitle("How does a politician think/communicate, with primordial or conceptual language?")+xlab("Thinking type")+ylab("word frequency")
   })
   
+  #creates table of the level/type of thinking associated with each word
   output$test<-DT::renderDataTable({
     inner_join(primordial_thinking_library, freq(), by = c("word" = "word")) %>% group_by(type_of_thinking) %>% rename(word_frequency = value)
   })
   
 }
-  
+
+# Run the application 
 shinyApp(ui=ui, server=server)
+
