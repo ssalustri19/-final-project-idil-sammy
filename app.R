@@ -19,7 +19,7 @@ library(lexicon)
 library(DescTools)
 library(jmuOutlier)
 
-
+#a self-created data set that contains politicians' names, positions, twitter handles and political party
 politicians<-read_csv('https://raw.githubusercontent.com/ssalustri19/final-project-idil-sammy/master/politicians.csv')
 
 #fill in your own twitter credentials to gain access to live dataset
@@ -49,16 +49,19 @@ ui<- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
+      #users select politicians from a searchable drop down menu
       selectInput(inputId = "politician",
                   label="Choose a politician",
                   choices= politicians$twitter_handle,
                   selectize = TRUE),
+      #user's select how many tweets to analyze
       numericInput(inputId = "numtweets",
                    label="Select number of most recent tweets to analyze. Max=3200",
                    value=100,
                    min=1,
                    max=3199,
                    step=100),
+      #sets up a run-analysis button
       actionButton(inputId="goButton",
                    label="Run Analysis")
     ),
