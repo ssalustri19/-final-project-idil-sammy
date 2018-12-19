@@ -1,7 +1,8 @@
 # -final-project-idil-sammy
 Final Project- Analyzing Politicians Tweets
 
-In order to run our app, you must gather your own twitter credentials. More information can be found from this website: https://developer.twitter.com/en/docs/basics/authentication/guides/access-tokens.html
+In order to run our app, you must gather your own twitter credentials. 
+More information can be found from this website: https://developer.twitter.com/en/docs/basics/authentication/guides/access-tokens.html
 Enter them into the appropriates spaces in the app.R file. Then just run the entire app.R to reproduce our shiny app.
 
 Note, the app calls the most recent tweets, so results may vary depending on when the app is run.
