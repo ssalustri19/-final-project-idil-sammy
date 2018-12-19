@@ -1,0 +1,282 @@
+---
+title: "Interactively Analyzing the Personality Type and Thought Structure of Famous Politicians based on what they Tweet"
+runtime: shiny
+output: html_document
+author: Idil and Sammy
+---
+
+###Abstract
+We created a shiny app that allows users to analyze the tweets of famous politicians. Users select a politician and the number of most recent tweets to be analyzed. The app returns several outputs: (1) a list of tweets, (2) a word frequency table, (3) a word frequency cloud (4) a positivity analysis of all the tweets (5) a personality analysis based on the words used in each tweet and (6) a thought analysis based on the words used. The positivity analysis is a histogram of the polarity scores of each tweet. The personality analysis associates each word used with different personality types (agreeableness, conscientiousness, extraversion, neuroticism and openness) and displays the results in a bar chart. Lastly, the thought analysis classifies the words used by a politician as relating to primordial thought (concrete thoughts relating to need and sensations) or conceptual thought (abstract thought aimed at problem solving).
+
+###Introduction
+It is no secret that Donald Trump loves to tweet and that his tweets are, for lack of a better term, unconventional. For example, take his tweet about the federal judge who declared his travel ban unconstitutional in 2017.  He states, “The opinion of this so-called judge, which essentially takes law-enforcement away from our country, is ridiculous and will be overturned!” Such a tweet portrays Trump as incredibly arrogant, after all, he is ridiculing a federal judge by questioning his ability when he refers to him as a “so-called judge.” But this is just one tweet. What do other tweets say about Trump’s personality? Moreover, is there a way to systematically analyze many tweets at once so as to gain insights into Trump’s, as well as many other politicians’, personalities and intellects in order to be able to objectively compare them? Our project seeks to answer these questions.  
+
+We created a shiny app that lets users select from over a 100 of the most influential politicians in the United States and allows them to analyze their tweets, so as to gain insights into their personality and thought structure. First, our app quantifies how positive or negative a politician’s tweets are. Trump, for instance, has a much higher proportion of negative tweets than Obama does. Second, our app analyzes a politician’s personality. We did so by building upon a recent study that was able to conduct personality surveys on participants and then observe their social media posts in order to see which personality types used which words most frequently. Lastly, our app analyzes a politician's thought structure by associating words with either primordial thought (concrete, pertains to needs and sensation) or conceptual (abstract, logical, aimed at problem solving). Together, the analyses provide a fuller picture of the politician's character.
+
+###Data
+Our data is a live dataset of tweets that is newly generated each time the app is run. We use Twitter’s API to gain access to the tweets.  Users select how many of the most recent tweets to include in the dataset. The maximum allowed is 3200. Once the tweets dataset is compiled, which contains the text included in each tweet and the date it was posted, the app creates a word-frequency dataset, which includes all of the different words used in all of the tweets and the number of times each word was used. Doing so required more advanced text-mining skills than what we learned in class.
+
+###Results
+We created a shiny app that intakes a selected number of tweets from a politician’s account and displays several qualitative information about their content. To achieve this feat, we took advantage of a variety of text mining packages in R and several novel sentiment dictionaries. We used a function (tm::termFreq) that counts the word frequencies in a corpus of text, in this case all the selected tweets of a politician, and displayed the information in our app with a word frequency table and a word cloud in which words with higher frequencies appear central and bigger. We excluded stop words and capitalization differences in our analysis. We used another function (SentimentAnalysis::analyzeSentiment) that can rate a complete sentence for its overall positivity and negativity. It references each word to the QDAP sentiment dictionary and computes an average for the whole sentence. We displayed the ratings for each tweet in a histogram plot in our shiny app, where the color represents whether the rating is positive, negative or neutral. The y-axis represents the number of tweets that got a particular score and the x-axis represents the range of scores from -0.5, most negative, to 0.5, most positive.  
+
+To analyze the most commonly used words, we investigated several sentiment analysis dictionaries. We chose two sentiment dictionaries that we thought best displayed what we wanted to know most about politicians, ie their personality traits and cognition. The first dictionary was created based on UPENN’s World-Well Being Project, a study that cross-correlated the personality types of registered social media users (they took personality aptitude tests) with the words they most commonly used on social media. The different personality types were agreeableness, conscientiousness, extraversion, neuroticism and openness. Each personality trait had its own sentiment dictionary available online, which we combined into one. We then inner joined each politician's most frequently used words with the personality dictionary. The results are displayed in a bar plot in our shiny app. The y-axis represents the number of words that belong to each of the five traits and the x-axis represents the five traits.   
+
+The second dictionary we used was Colin Martindale’s English Regressive Imagery Dictionary, which uses a psychoanalytical approach to identify how words reflect different mental thought mechanisms. The primary distinction between thought types is conceptual vs primordial thought, the prior meaning problem-solving, concrete and reality-based thinking, which resembles superego, and the latter represents associative, more fluid, unfiltered and fantasy-based thinking which more resembles unconscious thought processes, dreams and id. Within these, the words can be categorized into their motives and associations from the psychoanalysis literature such as regressive thought or aggression. This dictionary was available within the 'lexicon' package. Similarly, we inner joined it with each politician's most frequently used words. The results are outputted as a bar plot, where the y-axis represents the number of words that belong to either two thought types and the x-axis represents each type. The colors in the bars represent the psychoanalytical motive categories the words further fall into.  
+ 
+
+####Our App
+
+```{r setup, include=FALSE}
+
+#code for how we created our app
+
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+library(readr)
+library(DT)
+library(twitteR)
+library(dplyr)
+library(lubridate)
+library(tidytext)
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
+library(ggplot2)
+library(reshape2)
+library(SentimentAnalysis)
+library(lexicon)
+library(DescTools)
+library(jmuOutlier)
+
+#a self-created data set that contains politicians' names, positions, twitter handles and political party
+politicians<-read_csv('https://raw.githubusercontent.com/ssalustri19/final-project-idil-sammy/master/politicians.csv')
+
+#fill in your own twitter credentials to gain access to live dataset
+consumer_key <- "___"
+consumer_secret<- "___"
+access_token <- "___"
+access_secret <- "___"
+twitteR::setup_twitter_oauth(consumer_key ,consumer_secret,access_token ,access_secret)
+
+#personality analysis sentiment dictionaries
+library_conscientiousness <- read_csv('http://wwbp.org/downloads/public_data/C.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "conscientiousness") %>% select(-con)
+
+library_openness <- read_csv('http://wwbp.org/downloads/public_data/O.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "openness") %>% select(-ope)
+
+library_agreeableness <- read_csv('http://wwbp.org/downloads/public_data/A.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "agreeableness") %>% select(-agr)
+
+library_extraversion <- read_csv('http://wwbp.org/downloads/public_data/E.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "extraversion") %>% select(-ext)
+
+library_neuroticism  <- read_csv('http://wwbp.org/downloads/public_data/N.top100.1to3grams.gender_age_controlled.rmatrix.csv') %>% mutate(trait = "neuroticism") %>% select(-neu)
+
+#join the 5 data sets above. All about personality types
+library_fivepersonality <- rbind(library_agreeableness,library_conscientiousness,library_extraversion, library_neuroticism, library_openness)
+library_fivepersonality <-library_fivepersonality %>%  rename(word = X1)
+
+#the thinking type/psychoanalysis library; cleans it up and makes it usable
+primordial_thinking_library<- lexicon::key_regressive_imagery %>% 
+  rename(word = regex, type_of_thinking = thinking) %>% 
+  mutate(word = gsub("[^0-9A-Za-z///' ]","'" , word ,ignore.case = TRUE)) %>% 
+  mutate(word = sub("\\'b$", "", word)) %>% 
+  mutate(word = sub("\\'", "", word)) %>% 
+  mutate(word = sub("^b", "", word)) %>%
+  select(word, type_of_thinking, category)
+```
+
+```{r, echo=FALSE}
+
+#more code for how we created our app
+
+ui<- fluidPage(
+  titlePanel("Analyzing Politicans' Tweets"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      #users select politicians from a searchable drop down menu
+      selectInput(inputId = "politician",
+                  label="Choose a politician",
+                  choices= politicians$twitter_handle,
+                  selectize = TRUE),
+      #user's select how many tweets to analyze
+      numericInput(inputId = "numtweets",
+                   label="Select number of most recent tweets to analyze. Max=3200",
+                   value=100,
+                   min=1,
+                   max=3199,
+                   step=100),
+      #sets up a run-analysis button
+      actionButton(inputId="goButton",
+                   label="Run Analysis")
+    ),
+    
+    mainPanel(
+      tabsetPanel(tabPanel("Raw Tweets Data Frame", 
+                           textOutput(outputId = "position_party"), 
+                           DT::dataTableOutput(outputId = "tweetstable")),
+                  tabPanel("Word Frequency Table", 
+                           DT::dataTableOutput(outputId = "freqtable")),
+                  tabPanel("Word Cloud", 
+                           plotOutput(outputId="cloud")),
+                  tabPanel("Positivity and Negativity Analysis", 
+                           plotOutput(outputId = "positivity_plot")),
+                  tabPanel("Personality Analysis", 
+                           plotOutput(outputId = "personality_plot"),
+                           h6("This analysis is based on the `World Well-Being Project` by UPENN; http://www.wwbp.org/publications.html"),
+                           h6("Schwartz, H.Andrew, et al. “Personality, Gender, and Age in the Language of Social Media: The Open-Vocabulary Approach.” PLoS ONE, vol. 8, no. 9, Sept. 2013, pp. 1–16")),
+                  tabPanel("Thought Analysis", 
+                           plotOutput(outputId = "primordial_plot"),
+                           h4("Conceptual thought is abstract, logical, reality oriented, and aimed at problem solving. Primordial thought is associative, concrete, and takes little account of reality."),
+                           DT::dataTableOutput(outputId = "test"), 
+                           br(),
+                           h6("Our analysis uses the `Key regressive imagery` dictionary from the lexicon package. It is based on the following papers:"), 
+                           h6("Martindale, C. (1975). Romantic progression: The psychology of literary history. Washington, D.C.: Hemisphere."),
+                           h6("Martindale, C. (1976). Primitive mentality and the relationship between art and society. Scientific Aesthetics, 1, 5218."),
+                           h6("Martindale, C. (1977). Syntactic and semantic correlates of verbal tics in Gilles de la Tourette's syndrome: A quantitative case study. Brain and Language, 4, 231-247."),
+                           h6("Martindale, C. (1990). The clockwork muse: The predictability of artistic change. New York: Basic Books."))
+      )
+    )
+  )
+)
+
+# Define server logic
+server<- function(input,output){
+  
+  #tells us name, party and position of the selected twitter handle
+  output$position_party<-renderText({
+    req(input$politician)
+    df<-politicians %>% filter(twitter_handle==input$politician) %>% select(name,position,party)
+    name<-df$name
+    party<-df$party
+    position<-df$position
+    if (party=="D") party<-"democratic" else if (party=="R") party<-"republican" else party<-"independent"
+    paste(name, " is a ", party, position, ".")
+  })
+  
+  #creates reactive dataframe of tweets for a single politician, only updates when button is pressed
+  tweets_from_selected_politician<-eventReactive(input$goButton,
+                                                 {userTimeline(input$politician, n = input$numtweets, includeRts = FALSE)%>%
+                                                     twListToDF() %>% 
+                                                     mutate(date=lubridate::date(created)) %>% 
+                                                     select(text, date)
+                                                 })
+  #creates a reactive word frequency dataframe of all the words used in the collected tweets
+  freq<-reactive({
+    raw<-tm::termFreq(tweets_from_selected_politician()$text, control = list(removePunctuation = TRUE, tolower = TRUE, stopwords = TRUE)) 
+    df <- as.data.frame(melt(as.matrix(raw), varnames = c("word", "some"))) %>% select(-some)
+    df$word <- as.character(df$word)
+    df <- df %>% filter(!word %like% "http%", !word %like% "^amp%") %>% arrange(desc(value)) 
+  })
+  
+  #creates a word frequency table output
+  output$freqtable <- DT::renderDataTable({
+    DT::datatable(data = freq(), 
+                  options = list(pageLength = 10), 
+                  rownames = FALSE)
+  })
+  
+  #creates a word cloud
+  output$cloud<-renderPlot({
+    set.seed(1234)
+    wordcloud::wordcloud(freq()$word, freq()$value, min.freq=5, max.words=200, random.order=FALSE, rot.per=0.35, 
+                         colors=RColorBrewer::brewer.pal(8, "Dark2"))
+  })
+  
+  #creates a table output of the reactive tweets dataframe
+  output$tweetstable<-DT::renderDataTable({
+    DT::datatable(data = tweets_from_selected_politician(), 
+                  options = list(pageLength = 10), 
+                  rownames = FALSE)
+  })
+  
+  #creates plot of personality types associated with each word used
+  output$personality_plot<-renderPlot({
+    inner_join(library_fivepersonality, freq(), by=c("word"="word")) %>% 
+      group_by(trait) %>% 
+      summarize(word_count=sum(value)) %>% 
+      ggplot(aes(x=trait, y=word_count))+geom_bar(stat="identity")+xlab("Personality trait associated with each word")+ylab("Number of Words")+ggtitle("Personality Analysis Plot")
+  })
+  
+  #creates a plot of the overall positivity of each tweet
+  output$positivity_plot<-renderPlot({
+    tweets_from_selected_politician() %>%
+      mutate(positivity_rating=analyzeSentiment(text)$SentimentQDAP) %>%
+      ggplot(aes(x=positivity_rating, fill = as.factor(sign(positivity_rating))))+ geom_histogram(binwidth = .1) + scale_fill_manual(values=c("darkred", "gray", "darkgreen"), name="Positive or Negative?",breaks=c("-1", "0", "1"), labels=c("More Negative","Neutral","More Positive"))+xlab("Net Positivity Rating Per Tweet")+ylab("Number of Tweets")+ggtitle("Positivity of Tweets Distrinbution")
+  })
+  
+  #creates a plot of the level/type of thining associated with each word
+  output$primordial_plot<-renderPlot({
+    inner_join(primordial_thinking_library, freq(), by = c("word" = "word")) %>%
+      group_by(type_of_thinking) %>% 
+      ggplot(aes(x=type_of_thinking, y=value, fill = category))+geom_col()+ggtitle("How does a politician think/communicate, with primordial or conceptual language?")+xlab("Thinking type")+ylab("word frequency")
+  })
+  
+  #creates table of the level/type of thinking associated with each word
+  output$test<-DT::renderDataTable({
+    inner_join(primordial_thinking_library, freq(), by = c("word" = "word")) %>%
+      group_by(type_of_thinking) %>% 
+      rename(word_frequency = value)
+  })
+  
+}
+
+# Run the application 
+shinyApp(ui=ui, server=server, options = list(height = 500))
+
+```
+
+
+####Sample Results from Dec 18, 2018
+ 
+While the results of more than a 100 politicians would be difficult to summarize, one notable result was the fact that for the 1000 most recent tweets as of December 18, democrats Obama, Biden and  Clinton (Hillary) scored considerably higher on the ‘openness’ personality trait than republicans Trump and Pence. Another interesting result from the same pulled tweets was the fact that Trump and Pence both had considerably higher scores in the “glory” category of conceptual thought than Obama and Biden. 
+
+#####Joe Biden
+```{r , echo=FALSE, out.width = '50%'}
+
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/Biden%20personality%20analysis%20results.png?raw=true")
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/biden%20thought%20analysis%20results.png?raw=true")
+
+```
+
+#####Barack Obama
+```{r , echo=FALSE, out.width = '50%'}
+
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/obama%20personality%20analysis%20results.png?raw=true")
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/obama%20thought%20analysis%20results.png?raw=true")
+
+```
+
+#####Hillary Clinton
+```{r , echo=FALSE, out.width='50%'}
+
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/clinton%20personality%20analysis%20results.png?raw=true")
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/Clinton%20thought%20analysis%20results.png?raw=true")
+
+```
+
+#####Donald Trump
+```{r , echo=FALSE, out.width='50%'}
+
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/trump%20personality%20analysis%20results.png?raw=true")
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/Trump%20thought%20analysis%20results.png?raw=true")
+
+```
+
+#####Mike Pence
+```{r , echo=FALSE, out.width='50%'}
+
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/pence%20personality%20analysis%20results.png?raw=true")
+knitr::include_graphics("https://github.com/ssalustri19/final-project-idil-sammy/blob/master/sample%20results/pence%20thought%20analysis%20results.png?raw=true")
+
+```
+
+
+###Conclusion
+The models embedded within our app allow users to answer our original question, i.e. can we systematically quantify a politician's personality and cognition by analyzing what they tweet? One result is the fact that Trump is more negative and glory-oriented than Obama, something we would have expected, but would have had difficulty objectively comparing without the app.  
+
+The results, however, must be taken with a grain of salt. First, the app only uses the most recent tweets, which could bias our results based on the time of year. For example, congress is currently out of session and it is the holiday season, so tweets could be more positive than normal.  Second, politicians may not be the ones crafting their tweets, and as such, the personality or thought analysis may better reflect the staffers who are actually writing them. Lastly, our analyses do not statistically compare politicians, and if a small sample size is selected, it may be that differences in personality, for example, are not actually statistically significant. These limitations are the product of twitter and the politicians.  
+There are also many limitations inherent to our analysis. In the development of the app, we noted that many of the tweeted words did not have corresponding entries in our sentiment dictionaries, so our analyses only partially represent the twitter accounts. Additionally, we chose to weight each word the same in our personality and thought analyses, which means that if politicians used the same word frequently, such as the word 'open' which is associated with the personality trait 'openness', then they would have had a high openness score even if they never used another word associated with that personality trait. Whether this  is a justifiable representation of the openness trait is an arguable decision that warrants further discussion.  
+
+Another main limitation of the results is the fact that we did not stem the words in our word frequency tables, because we were not sure if the stemmed words would correctly match to the appropriate sentiments in our specific sentiment dictionaries. For example, “booking” when stemmed becomes “book,” which could have returned as an openness personality trait when it was not supposed to. We also do not know if the entry we find in the dictionaries matched the intended meaning of the word, such as “run”, Did it mean run as in running a mile or as in running a business? Different meanings could imply different sentiments. We did not account for this.
+
+Overall, our app is a good attempt at understanding different politicians. We provided a novel analysis of politician's twitter accounts in order to reveal insights about their personalities and mental outlooks.
